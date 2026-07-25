@@ -35,7 +35,7 @@ const CustomerSupportChat = () => {
 
         fetchHistory().then(() => {
             const newConnection = new HubConnectionBuilder()
-                .withUrl("https://store-backend.onrender.com/chathub", {
+                .withUrl("https://store-backend-ilsn.onrender.com", {
                     accessTokenFactory: () => localStorage.getItem('accessToken')
                 })
                 .configureLogging(LogLevel.Information)
