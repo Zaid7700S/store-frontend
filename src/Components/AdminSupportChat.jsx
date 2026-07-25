@@ -34,7 +34,7 @@ const AdminSupportChat = () => {
 
         fetchHistory().then(() => {
             const newConnection = new HubConnectionBuilder()
-                .withUrl("https://store-backend-ilsn.onrender.com", {
+                .withUrl("https://store-backend-ilsn.onrender.com/chathub", {
                     accessTokenFactory: () => localStorage.getItem('accessToken')
                 })
                 .configureLogging(LogLevel.Information)
