@@ -131,14 +131,13 @@ const Login = () => {
         )}
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <div>
-            <label className="block font-medium mb-2">
-              Username
-            </label>
-
+         <div>
+          <label className="block font-medium mb-2">
+            Username or Email
+          </label>
             <input
               type="text"
-              placeholder="Enter username"
+              placeholder="Enter username or email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full border border-black/20 rounded-xl p-3"
