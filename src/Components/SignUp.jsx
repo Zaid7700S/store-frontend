@@ -22,22 +22,31 @@ export default function Signup() {
     });
   };
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+ const handleSignup = async (e) => {
+  e.preventDefault();
 
-    try {
-      await api.post("/api/Users/SignUp", formData);
-      navigate("/login");
-    } catch (err) {
-      setError(
-        err.response?.data?.message || "Signup failed. Try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ==========================================
+  // 1. ADD THIS VALIDATION SHIELD
+  // ==========================================
+  if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
+    setError("Please fill out all fields before submitting.");
+    return; // Stops the function from hitting the API
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    await api.post("/api/Users/SignUp", formData);
+    navigate("/login");
+  } catch (err) {
+    setError(
+      err.response?.data?.message || "Signup failed. Try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-[70vh] flex justify-center items-center px-4">
