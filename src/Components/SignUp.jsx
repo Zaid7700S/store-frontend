@@ -5,8 +5,10 @@ import { useNavigate, Link } from "react-router-dom";
 export default function Signup() {
   const navigate = useNavigate();
 
+  // 1. ADDED EMAIL TO STATE
   const [formData, setFormData] = useState({
     username: "",
+    email: "", 
     password: "",
   });
 
@@ -22,13 +24,11 @@ export default function Signup() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-
     setLoading(true);
     setError("");
 
     try {
       await api.post("/api/Users/SignUp", formData);
-
       navigate("/login");
     } catch (err) {
       setError(
@@ -42,13 +42,8 @@ export default function Signup() {
   return (
     <div className="min-h-[70vh] flex justify-center items-center px-4">
       <div className="w-full max-w-md border border-black/10 rounded-3xl p-8">
-        <h1 className="text-3xl font-bold mb-2">
-          Create Account
-        </h1>
-
-        <p className="text-black/60 mb-6">
-          Enter your username and password to create an account.
-        </p>
+        <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+        <p className="text-black/60 mb-6">Enter your details to create an account.</p>
 
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
@@ -57,12 +52,8 @@ export default function Signup() {
         )}
 
         <form onSubmit={handleSignup} className="flex flex-col gap-4">
-
           <div>
-            <label className="block font-medium mb-2">
-              Username
-            </label>
-
+            <label className="block font-medium mb-2">Username</label>
             <input
               type="text"
               name="username"
@@ -75,12 +66,23 @@ export default function Signup() {
             />
           </div>
 
+          {/* 2. ADDED EMAIL INPUT FIELD */}
+          <div>
+            <label className="block font-medium mb-2">Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter email address"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full border border-black/20 rounded-xl p-3"
+              disabled={loading}
+              required
+            />
+          </div>
 
           <div>
-            <label className="block font-medium mb-2">
-              Password
-            </label>
-
+            <label className="block font-medium mb-2">Password</label>
             <input
               type="password"
               name="password"
@@ -93,7 +95,6 @@ export default function Signup() {
             />
           </div>
 
-
           <button
             type="submit"
             disabled={loading}
@@ -101,9 +102,7 @@ export default function Signup() {
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
-
         </form>
-
 
         <p className="text-center text-sm mt-6 text-black/60">
           Already have an account?{" "}
@@ -114,7 +113,6 @@ export default function Signup() {
             Login
           </button>
         </p>
-
       </div>
     </div>
   );
