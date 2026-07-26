@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../Api/api";
-import { useNavigate,Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Details = () => {
     const navigate = useNavigate();
@@ -8,6 +8,7 @@ const Details = () => {
     const [user, setUser] = useState({
         name: "",
         username: "",
+        email: "", // 1. ADDED EMAIL TO STATE
         profilePictureUrl: "",
     });
 
@@ -20,10 +21,10 @@ const Details = () => {
     const fetchUser = async () => {
         try {
             const response = await api.get("/api/Users/me");
-
             setUser({
                 name: response.data.name,
                 username: response.data.userName,
+                email: response.data.email, // 2. PULL EMAIL FROM API
                 profilePictureUrl: response.data.profilePictureUrl,
             });
         } catch (err) {
@@ -34,7 +35,8 @@ const Details = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem("token"); // Adjust if you store auth elsewhere
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken"); 
         navigate("/login");
     };
 
@@ -49,9 +51,7 @@ const Details = () => {
     return (
         <div className="min-h-[70vh] flex justify-center items-center px-4 py-10">
             <div className="w-full max-w-md border border-black/10 rounded-3xl p-8 shadow-sm">
-
                 <div className="flex flex-col items-center">
-
                     <div className="w-32 h-32 rounded-full overflow-hidden border border-black/20 bg-gray-200 flex items-center justify-center">
                         <img
                             src={
@@ -70,9 +70,7 @@ const Details = () => {
                             }}
                         />
                     </div>
-
                     <h2 className="text-2xl font-bold mt-5">{user.name}</h2>
-
                     <p className="text-gray-500">@{user.username}</p>
                 </div>
 
@@ -86,6 +84,12 @@ const Details = () => {
                         <p className="text-sm text-gray-500">Username</p>
                         <p className="font-semibold">{user.username}</p>
                     </div>
+
+                    {/* 3. ADDED EMAIL DISPLAY BOX */}
+                    <div className="border rounded-xl p-4">
+                        <p className="text-sm text-gray-500">Email Address</p>
+                        <p className="font-semibold">{user.email || "No email provided"}</p>
+                    </div>
                 </div>
 
                 <div className="mt-8 flex flex-col gap-3">
@@ -95,13 +99,11 @@ const Details = () => {
                     >
                         Edit Details
                     </button>
-
                      <Link to={`/`}><button
                         className="bg-black text-white rounded-full py-3 cursor-pointer w-full hover:bg-neutral-800 transition"
                     >
                         Back to Home
                     </button></Link>
-
                     <button
                         onClick={handleLogout}
                         className="border border-red-500 text-red-500 rounded-full py-3 cursor-pointer hover:bg-red-500 hover:text-white transition"
@@ -109,7 +111,6 @@ const Details = () => {
                         Logout
                     </button>
                 </div>
-
             </div>
         </div>
     );
