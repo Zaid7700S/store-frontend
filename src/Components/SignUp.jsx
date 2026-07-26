@@ -1,11 +1,10 @@
 import { useState } from "react";
 import api from "../Api/api";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const navigate = useNavigate();
 
-  // 1. ADDED EMAIL TO STATE
   const [formData, setFormData] = useState({
     username: "",
     email: "", 
@@ -22,31 +21,32 @@ export default function Signup() {
     });
   };
 
- const handleSignup = async (e) => {
-  e.preventDefault();
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
-  // ==========================================
-  // 1. ADD THIS VALIDATION SHIELD
-  // ==========================================
-  if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
-    setError("Please fill out all fields before submitting.");
-    return; // Stops the function from hitting the API
-  }
+    // ==========================================
+    // SHIELD: Added optional chaining (?.) to prevent crashes
+    // if an extension briefly makes the state undefined
+    // ==========================================
+    if (!formData.username?.trim() || !formData.email?.trim() || !formData.password?.trim()) {
+      setError("Please fill out all fields before submitting.");
+      return; 
+    }
 
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    await api.post("/api/Users/SignUp", formData);
-    navigate("/login");
-  } catch (err) {
-    setError(
-      err.response?.data?.message || "Signup failed. Try again."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await api.post("/api/Users/SignUp", formData);
+      navigate("/login");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Signup failed. Try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-[70vh] flex justify-center items-center px-4">
@@ -60,7 +60,8 @@ export default function Signup() {
           </div>
         )}
 
-        <form onSubmit={handleSignup} className="flex flex-col gap-4">
+        {/* Added autoComplete="off" to deter aggressive extensions */}
+        <form onSubmit={handleSignup} autoComplete="off" className="flex flex-col gap-4">
           <div>
             <label className="block font-medium mb-2">Username</label>
             <input
@@ -75,7 +76,6 @@ export default function Signup() {
             />
           </div>
 
-          {/* 2. ADDED EMAIL INPUT FIELD */}
           <div>
             <label className="block font-medium mb-2">Email</label>
             <input
@@ -107,7 +107,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-black text-white rounded-full p-3 mt-2"
+            className="bg-black text-white rounded-full p-3 mt-2 cursor-pointer"
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </button>
@@ -116,8 +116,9 @@ export default function Signup() {
         <p className="text-center text-sm mt-6 text-black/60">
           Already have an account?{" "}
           <button
+            type="button" // <--- Ensures this doesn't act as a submit button
             onClick={() => navigate("/login")}
-            className="text-black font-semibold underline"
+            className="text-black font-semibold underline cursor-pointer"
           >
             Login
           </button>
