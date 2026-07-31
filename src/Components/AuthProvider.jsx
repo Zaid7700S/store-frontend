@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
 
     if (!token) {
       setUserId(null);
+      setRole(null); // Added this to wipe the role properly
       return;
     }
 
@@ -23,6 +24,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Invalid token", error);
       setUserId(null);
+      setRole(null); // Added this to wipe the role properly
+      localStorage.removeItem("accessToken"); // Clean up corrupted token
     }
   };
 
@@ -31,7 +34,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ userId,role, loadUser }}>
+    <AuthContext.Provider value={{ userId, role, loadUser }}>
       {children}
     </AuthContext.Provider>
   );
