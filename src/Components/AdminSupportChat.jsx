@@ -44,12 +44,23 @@ const AdminSupportChat = () => {
     }, [userId]);
 
     // ==========================================
-    // CRITICAL FIX: Synchronous Listener & Deduplication
+    // CRITICAL FIX: Synchronous Listener & JSON Normalizer
     // ==========================================
     useEffect(() => {
         if (!connection) return;
 
-        const handleIncomingMessage = (newMessage) => {
+        const handleIncomingMessage = (rawMsg) => {
+            // 1. Standardize the casing from the SignalR Hub (PascalCase -> camelCase)
+            const newMessage = {
+                id: rawMsg.id || rawMsg.Id,
+                senderId: rawMsg.senderId || rawMsg.SenderId,
+                receiverId: rawMsg.receiverId || rawMsg.ReceiverId || rawMsg.recieverId,
+                message: rawMsg.message || rawMsg.Message,
+                timestamp: rawMsg.timestamp || rawMsg.Timestamp,
+                senderName: rawMsg.senderName || rawMsg.SenderName,
+                senderProfilePic: rawMsg.senderProfilePic || rawMsg.SenderProfilePic
+            };
+
             setMessages((prev) => {
                 // Prevent duplicate messages if the server echoes our own message back
                 const exists = prev.find(m => 
@@ -58,8 +69,8 @@ const AdminSupportChat = () => {
                 );
                 
                 if (exists) {
-                    // Replace our temporary optimistic message with the real one from the database
-                    return prev.map(m => m === exists ? newMessage : m);
+                    // 2. Merge properties to guarantee we don't lose the receiverId
+                    return prev.map(m => m === exists ? { ...m, ...newMessage, id: newMessage.id, receiverId: newMessage.receiverId || m.receiverId } : m);
                 }
                 
                 return [...prev, newMessage];
