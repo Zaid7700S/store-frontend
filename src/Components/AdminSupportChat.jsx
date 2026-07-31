@@ -5,23 +5,20 @@ import api from '../Api/api';
 import { useAuth } from './AuthProvider';
 
 const AdminSupportChat = () => {
-    // Live Chat State
     const [messages, setMessages] = useState([]);
     const [connection, setConnection] = useState(null);
 
-    // AI Chat State
     const [aiMessages, setAiMessages] = useState([
         { senderId: 'ai-assistant', message: "System Admin AI online. I have full clearance to discuss inventory and carts. How can I help?" }
     ]);
     const [isAiTyping, setIsAiTyping] = useState(false);
 
     const [inputText, setInputText] = useState("");
-    const [selectedCustomerId, setSelectedCustomerId] = useState('ai-assistant'); // Default to AI
+    const [selectedCustomerId, setSelectedCustomerId] = useState('ai-assistant'); 
 
     const messagesEndRef = useRef(null);
     const { userId } = useAuth();
 
-    // --- SignalR Setup (Unchanged) ---
     useEffect(() => {
         const fetchHistory = async () => {
             try {
@@ -46,20 +43,41 @@ const AdminSupportChat = () => {
         return () => { connection?.stop(); };
     }, [userId]);
 
+    // ==========================================
+    // CRITICAL FIX: Synchronous Listener & Deduplication
+    // ==========================================
     useEffect(() => {
-        if (connection) {
-            connection.start()
-                .then(() => {
-                    connection.on("ReceiveMessage", (newMessage) => {
-                        setMessages((prev) => [...prev, newMessage]);
-                    });
-                })
-                .catch(e => console.error("SignalR Error: ", e));
+        if (!connection) return;
+
+        const handleIncomingMessage = (newMessage) => {
+            setMessages((prev) => {
+                // Prevent duplicate messages if the server echoes our own message back
+                const exists = prev.find(m => 
+                    m.id === newMessage.id || 
+                    (String(m.id).startsWith('temp-') && String(m.senderId) === String(newMessage.senderId) && m.message === newMessage.message)
+                );
+                
+                if (exists) {
+                    // Replace our temporary optimistic message with the real one from the database
+                    return prev.map(m => m === exists ? newMessage : m);
+                }
+                
+                return [...prev, newMessage];
+            });
+        };
+
+        // Attach listener OUTSIDE of the .start() promise to prevent double-bindings
+        connection.on("ReceiveMessage", handleIncomingMessage);
+
+        if (connection.state === 'Disconnected') {
+            connection.start().catch(e => console.error("SignalR Error: ", e));
         }
-        return () => { if (connection) connection.off("ReceiveMessage"); };
+
+        return () => { 
+            connection.off("ReceiveMessage", handleIncomingMessage); 
+        };
     }, [connection]);
 
-    // --- Compute Contacts ---
     const activeCustomers = useMemo(() => {
         const customerMap = new Map();
         messages.forEach(msg => {
@@ -78,11 +96,9 @@ const AdminSupportChat = () => {
         return Array.from(customerMap.values());
     }, [messages, userId]);
 
-    // Inject AI into the contact list
     const aiContact = { id: 'ai-assistant', name: 'AI Store Manager', isAi: true };
     const allContacts = [aiContact, ...activeCustomers];
 
-    // --- Compute Current Conversation ---
     const isAiSelected = selectedCustomerId === 'ai-assistant';
     const currentConversation = useMemo(() => {
         if (!selectedCustomerId) return [];
@@ -98,7 +114,6 @@ const AdminSupportChat = () => {
 
     const selectedCustomer = allContacts.find(c => String(c.id) === String(selectedCustomerId));
 
-    // --- Handle Sending ---
     const handleSendMessage = async (e) => {
         e?.preventDefault();
         if (!inputText.trim() || !selectedCustomerId) return;
@@ -107,7 +122,6 @@ const AdminSupportChat = () => {
         setInputText("");
 
         if (isAiSelected) {
-            // Handle AI Request
             const newUserMsg = { senderId: userId, message: textToSend };
             setAiMessages(prev => [...prev, newUserMsg]);
             setIsAiTyping(true);
@@ -126,7 +140,19 @@ const AdminSupportChat = () => {
                 setIsAiTyping(false);
             }
         } else {
-            // Handle Live User Request
+            // ==========================================
+            // CRITICAL FIX: Optimistic UI Update
+            // ==========================================
+            // Instantly show the message on screen without waiting for the server
+            const optimisticMsg = {
+                id: `temp-${Date.now()}`,
+                senderId: userId,
+                receiverId: selectedCustomerId,
+                message: textToSend,
+                timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, optimisticMsg]);
+
             try {
                 await connection.invoke("SendMessageToCustomer", selectedCustomerId, textToSend);
             } catch (error) {
