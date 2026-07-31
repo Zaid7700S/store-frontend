@@ -27,6 +27,7 @@ import ViewAllCarts from './Components/ViewAllCarts'
 import ViewCartDetail from './Components/ViewCartDetail'
 import ProductsPage from './Components/ProductsPage'
 import CategoryPage from './Components/CategoryPage'
+import ScrollToTop from './utils/ScrollToTop';
 
 
 
@@ -50,6 +51,7 @@ function App() {
   return (
     <>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             <Route element={<MainLayout />}>
