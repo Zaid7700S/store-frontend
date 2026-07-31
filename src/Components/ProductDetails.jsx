@@ -3,6 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import api from "../Api/api";
 
+// 1. ADDED IMPORT FOR YOUR REAL STAR COMPONENT
+import StarRating from "./StarRating"; 
+
 const sizes = ["Small", "Medium", "Large", "X-Large"];
 const colours = ["#4F4631", "#314F4A", "#31344F"];
 
@@ -32,16 +35,6 @@ const reviews = [
     text: "The ordering process was seamless, and the clothes arrived on time. The fit is perfect and everything feels thoughtfully made.",
   },
 ];
-
-const StarRating = ({ value = 5, compact = false }) => (
-  <span
-    className={`text-[#FFC633] tracking-[2px] ${compact ? "text-[16px]" : "text-[20px]"}`}
-    aria-label={`${value} out of 5 stars`}
-  >
-    {"★".repeat(Math.floor(value))}
-    {value % 1 ? "½" : ""}
-  </span>
-);
 
 const ProductDetails = () => {
   const { productId } = useParams();
@@ -151,7 +144,6 @@ const ProductDetails = () => {
     );
   }
 
-  // Use the imageUrl from the database, fallback to a placeholder if it doesn't exist
   const imgSrc = product.imageUrl || 'https://via.placeholder.com/600x800?text=No+Image';
   const images = [imgSrc, imgSrc, imgSrc];
   const rating = product.rating || 4.5;
@@ -209,7 +201,8 @@ const ProductDetails = () => {
             </h1>
 
             <div className="mt-3 flex items-center gap-3">
-              <StarRating value={rating} />
+              {/* 2. UPDATED PROP FROM value TO rating */}
+              <StarRating rating={rating} />
               <span className="text-[14px]">{rating}<span className="text-black/60">/5</span></span>
             </div>
 
@@ -340,7 +333,8 @@ const ProductDetails = () => {
                 {reviews.map((review) => (
                   <article key={review.name} className="rounded-[20px] border border-black/10 p-6 md:p-8">
                     <div className="flex justify-between">
-                      <StarRating value={review.rating} compact />
+                      {/* 3. UPDATED PROP FROM value TO rating */}
+                      <StarRating rating={review.rating} compact />
                       <span className="text-xl text-black/40">•••</span>
                     </div>
                     <h3 className="mt-3 text-[20px] font-bold">
@@ -395,7 +389,8 @@ const ProductDetails = () => {
                 </div>
                 <h3 className="mt-3 truncate text-[16px] font-bold md:text-[20px]">{name}</h3>
                 <div className="mt-1 flex items-center gap-2">
-                  <StarRating value={index === 1 ? 3.5 : 4.5} compact />
+                  {/* 4. UPDATED PROP FROM value TO rating */}
+                  <StarRating rating={index === 1 ? 3.5 : 4.5} compact />
                   <span className="text-[12px] text-black/60">4.5/5</span>
                 </div>
                 <p className="mt-1 text-[20px] font-bold md:text-[24px]">${120 + index * 25}</p>
