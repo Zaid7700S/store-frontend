@@ -6,13 +6,11 @@ import msgIcon from '../assets/msg.svg';
 
 const CustomerSupportChat = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('ai'); // 'ai' or 'live'
+    const [activeTab, setActiveTab] = useState('ai'); 
 
-    // Live Chat State
     const [messages, setMessages] = useState([]);
     const [connection, setConnection] = useState(null);
 
-    // AI Chat State
     const [aiMessages, setAiMessages] = useState([
         { senderId: 'ai', message: "Hi! I'm your AI shopping assistant. How can I help you today?" }
     ]);
@@ -22,7 +20,6 @@ const CustomerSupportChat = () => {
     const messagesEndRef = useRef(null);
     const { userId } = useAuth();
 
-    // --- SignalR Setup (Unchanged) ---
     useEffect(() => {
         const fetchHistory = async () => {
             try {
@@ -45,27 +42,42 @@ const CustomerSupportChat = () => {
         });
     }, [userId]);
 
+    // ==========================================
+    // CRITICAL FIX: Synchronous Listener & Deduplication
+    // ==========================================
     useEffect(() => {
-        if (connection) {
-            connection.start()
-                .then(() => {
-                    connection.on("ReceiveMessage", (newMessage) => {
-                        setMessages((prev) => [...prev, newMessage]);
-                    });
-                })
-                .catch(e => console.error("SignalR Connection Error: ", e));
+        if (!connection) return;
+
+        const handleIncomingMessage = (newMessage) => {
+            setMessages((prev) => {
+                const exists = prev.find(m => 
+                    m.id === newMessage.id || 
+                    (String(m.id).startsWith('temp-') && String(m.senderId) === String(newMessage.senderId) && m.message === newMessage.message)
+                );
+                
+                if (exists) {
+                    return prev.map(m => m === exists ? newMessage : m);
+                }
+                
+                return [...prev, newMessage];
+            });
+        };
+
+        connection.on("ReceiveMessage", handleIncomingMessage);
+
+        if (connection.state === 'Disconnected') {
+            connection.start().catch(e => console.error("SignalR Connection Error: ", e));
         }
+
         return () => {
-            if (connection) connection.off("ReceiveMessage");
+            connection.off("ReceiveMessage", handleIncomingMessage);
         };
     }, [connection]);
 
-    // --- Auto Scroll ---
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, aiMessages, isOpen, activeTab]);
 
-    // --- Handle Sending ---
     const handleSendMessage = async (e) => {
         e?.preventDefault();
         if (!inputText.trim()) return;
@@ -74,13 +86,23 @@ const CustomerSupportChat = () => {
         setInputText("");
 
         if (activeTab === 'live') {
+            // ==========================================
+            // CRITICAL FIX: Optimistic UI Update
+            // ==========================================
+            const optimisticMsg = {
+                id: `temp-${Date.now()}`,
+                senderId: userId,
+                message: textToSend,
+                timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, optimisticMsg]);
+
             try {
                 await connection.invoke("SendMessageToAdmin", textToSend);
             } catch (error) {
                 console.error("Failed to send message: ", error);
             }
         } else {
-            // Handle AI Request
             const newUserMsg = { senderId: userId, message: textToSend };
             setAiMessages(prev => [...prev, newUserMsg]);
             setIsAiTyping(true);
@@ -101,7 +123,6 @@ const CustomerSupportChat = () => {
         }
     };
 
-    // --- Render Helpers ---
     const currentMessages = activeTab === 'live' ? messages : aiMessages;
 
     return (
@@ -118,7 +139,6 @@ const CustomerSupportChat = () => {
             {isOpen && (
                 <div className="bg-white w-80 md:w-96 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
 
-                    {/* Header */}
                     <div className="bg-black text-white px-6 py-4 flex justify-between items-center">
                         <div>
                             <h3 className="font-integral font-bold text-[20px]">SHOP.CO Support</h3>
@@ -129,7 +149,6 @@ const CustomerSupportChat = () => {
                         </button>
                     </div>
 
-                    {/* Tabs */}
                     <div className="flex border-b border-gray-200 bg-gray-50">
                         <button
                             onClick={() => setActiveTab('ai')}
@@ -145,7 +164,6 @@ const CustomerSupportChat = () => {
                         </button>
                     </div>
 
-                    {/* Messages Area */}
                     <div className="bg-[#F2F0F1] h-72 overflow-y-auto p-4 flex flex-col gap-3">
                         {currentMessages.length === 0 ? (
                             <p className="text-center text-[#9A9A9A] text-sm mt-auto mb-auto">
@@ -172,7 +190,6 @@ const CustomerSupportChat = () => {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input */}
                     <div className="p-4 bg-white border-t border-gray-100">
                         <form onSubmit={handleSendMessage} className="flex items-center bg-[#F0F0F0] rounded-full px-4 h-12 w-full">
                             <input
